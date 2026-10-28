@@ -67,7 +67,7 @@ print(a.shape)
 a.squeeze(0)         # 只删第 0 维，形状变成 (4, 1)
 print(a.shape)
 
-# 2. unsequeeze(反挤压)
+# 2. unsqueeze(反挤压)
 # 在指定位置插入一个大小为 1 的维度
 a = torch.rand(4)
 print(a)
@@ -132,3 +132,15 @@ print(a)
 print(a[a > 0.5])  # tensor([条件]) 返回值是一维Tensor，里面装着所有符合条件的数值
 a[a > 0.5] = 0  # 利用布尔索引去修改原Tensor里的数值
 print(a)
+
+# 3. gather / scatter
+# gather(dim, index): 沿 dim 按 index 取值
+# scatter(dim, index, src): 沿 dim 按 index 吧src中的值写入调用scatter的张量里去
+# 去找它真正的用途写在这里。。。。
+
+# 4. index_select(dim, index)
+# 在某个维度上去按索引选一些数据
+a = torch.rand(1, 3)
+print(a)
+print(a.index_select(1, torch.tensor([1, 1, 2])))
+# 最实在的用途：按编号批量"点名取数据"
