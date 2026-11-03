@@ -26,7 +26,6 @@ def step(st, act):
     # 按action行动，撞墙留在原地
     if nr < 0 or nr >= SIZE or nc < 0 or nc >= SIZE:
         next_st = (ro, co)
-        return next_st, -1
     else:
         next_st = (ro + dr, co + dc)
     # 定义reward: 不进禁区就是 -1，进了 -2 ，进入target区域 +10
