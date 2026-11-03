@@ -1,24 +1,30 @@
 import numpy as np
 import random
-
 # ---------- 1. 定义环境 ----------
 SIZE = 5
 START = (0, 0)
-GOAL = (SIZE - 1, SIZE - 1)
-ACTIONS = [(-1, 0), (1, 0), (0, -1), (0, 1)]  # 上 下 左 右
+END = (SIZE-1, SIZE-1)
+BARRIER = [(2, 0), (1, 2), (0, 4), (4, 2)]
+ACTIONS = [(0, 0), (-1, 0), (1, 0), (0, -1), (0, 1)]  # 原地不动、上、下、左、右
 
-def step(state, action):
-    """执行动作，返回 (下一状态, 奖励, 是否结束)"""
-    r, c = state
-    dr, dc = action
-    nr, nc = r + dr, c + dc
-    # 越界就停在原地
-    if not (0 <= nr < SIZE and 0 <= nc < SIZE):
-        nr, nc = r, c
-    next_state = (nr, nc)  # 计算下一个状态
-    if next_state == GOAL:
-        return next_state, 10, True     # 到达终点
-    return next_state, -1, False        # 每走一步惩罚
+def step(st, act):
+    ro, co = st
+    dr, dc = ACTIONS[act]
+    nr, nc = ro + dr, co + dc
+    # 按action行动，撞墙留在原地
+    if nr < 0 or nr >= SIZE or nc < 0 or nc >= SIZE:
+        next_st = (ro, co)
+        return next_st, -1
+    else:
+        next_st = (ro + dr, co + dc)
+    # 定义reward: 不进禁区就是 -1，进了 -2 ，进入target区域 +10
+    if next_st in BARRIER:
+        rew = -2
+    elif next_st == END:
+        rew = 10
+    else:
+        rew = -1
+    return next_st, rew
 
 # ---------- 2. 初始化 Q 表 ----------
 # Q[state][action] = 在 state 做 action 的“最优动作价值估计”
@@ -27,7 +33,7 @@ def step(state, action):
 Q = {}  # 这是个字典
 for r in range(SIZE):
     for c in range(SIZE):
-        Q[(r, c)] = [0.0, 0.0, 0.0, 0.0]  # 这就是最初对Q值的估计，完全是瞎猜，后面的每次更新不断用新经验修正这个估计，让它越来越接近真实价值
+        Q[(r, c)] = [0.0, 0.0, 0.0, 0.0, 0.0]  # 这就是最初对Q值的估计，完全是瞎猜，后面的每次更新不断用新经验修正这个估计，让它越来越接近真实价值
 
 # ---------- 3. 超参数 ----------
 alpha = 0.1       # 学习率    学习率控制"每次更新时，旧 Q 值向新目标靠拢多大一步"——也就是智能体接受新经验的快慢。学得快但可能不稳，学得慢但更平滑
@@ -43,13 +49,14 @@ for ep in range(episodes):
     while not done:
         # (1) 选择动作：ε-贪心  a是动作的下标
         if random.random() < epsilon:  # random.random()输出0-1上的均匀分布，配合探索率决定探索还是利用
-            a = random.randint(0, 3)  # 探索    输出闭区间0-3上的随机整数作为动作下标
+            a = random.randint(0, 4)  # 探索    输出闭区间0-4上的随机整数作为动作下标
         else:
             a = int(np.argmax(Q[state]))    # 利用    调用numpy库，返回Q表state位置上q值最大动作的下标
 
         # (2) 执行动作，观察结果
-        next_state, reward, done = step(state, ACTIONS[a])
-
+        next_state, reward = step(state, ACTIONS[a])
+        if next_state == END:
+            done = True
         # (3) Q-Learning 的标准更新公式（时序差分 TD 更新）
         # 旧估计 Q(s, a)
         #    ↓
@@ -67,12 +74,13 @@ for ep in range(episodes):
         # (4) 进入下一状态
         state = next_state
 
+print(Q)
 # ---------- 5. 测试：按学到的策略走 ----------
 state = START
 path = [state]
-while state != GOAL:
+while state != END:
     a = int(np.argmax(Q[state]))   # 最终的Q表就是训练成果，查Q表决定怎么行动
-    state, _, _ = step(state, ACTIONS[a])
+    state, reward = step(state, ACTIONS[a])
     path.append(state)
+    print(a)
 print("学到的最短路径：", path)
-print(Q.values())
